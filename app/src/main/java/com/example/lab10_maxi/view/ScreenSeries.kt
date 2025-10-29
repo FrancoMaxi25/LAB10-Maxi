@@ -169,37 +169,83 @@ fun ContenidoSerieEditar(navController: NavHostController, servicio: SerieApiSer
 }
 
 // 🔹 ELIMINAR SERIE
+// 🔹 ELIMINAR SERIE (mejorado con detalle y estilo)
 @Composable
 fun ContenidoSerieEliminar(navController: NavHostController, servicio: SerieApiService, id: Int) {
     var showDialog by remember { mutableStateOf(true) }
     var borrar by remember { mutableStateOf(false) }
+    var serie by remember { mutableStateOf<SerieModel?>(null) }
+    val context = LocalContext.current.applicationContext
+
+    // 🔸 Cargar detalles de la serie antes de confirmar
+    LaunchedEffect(id) {
+        try {
+            val response = servicio.selectSerie(id.toString())
+            serie = response.body()
+        } catch (e: Exception) {
+            Log.e("SERIES_APP", "Error cargando serie: ${e.message}")
+            showToast(context, "Error cargando serie")
+        }
+    }
 
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text("Confirmar Eliminación") },
-            text = { Text("¿Está seguro de eliminar la Serie con ID $id?") },
+            title = {
+                Text(
+                    text = "Confirmar Eliminación",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                )
+            },
+            text = {
+                Column {
+                    if (serie != null) {
+                        Text("¿Seguro que desea eliminar esta serie?", fontSize = 16.sp)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "ID: ${serie!!.id}\nTítulo: ${serie!!.name}",
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 15.sp,
+                            color = Color(0xFF424242)
+                        )
+                    } else {
+                        Text("Cargando detalles...", color = Color.Gray, fontSize = 14.sp)
+                    }
+                }
+            },
             confirmButton = {
-                Button(onClick = { showDialog = false; borrar = true }) {
-                    Text("Aceptar")
+                Button(
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                    onClick = {
+                        showDialog = false
+                        borrar = true
+                    }
+                ) {
+                    Text("Eliminar", color = Color.White)
                 }
             },
             dismissButton = {
-                Button(onClick = { showDialog = false; navController.navigate("series") }) {
-                    Text("Cancelar")
+                Button(
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF757575)),
+                    onClick = {
+                        showDialog = false
+                        navController.navigate("series")
+                    }
+                ) {
+                    Text("Cancelar", color = Color.White)
                 }
             }
         )
     }
 
+    // 🔸 Ejecutar eliminación con retroalimentación visual
     if (borrar) {
-        val contextRef = LocalContext.current.applicationContext
         LaunchedEffect(Unit) {
             try {
                 servicio.deleteSerie(id.toString())
-                showToast(contextRef, "Serie eliminada con éxito")
+                showToast(context, "Serie eliminada: ${serie?.name ?: id}")
             } catch (e: Exception) {
-                showToast(contextRef, "Error al eliminar: ${e.message}")
+                showToast(context, "Error al eliminar: ${e.message}")
                 Log.e("SERIES_APP", "Error al eliminar: ${e.message}")
             }
             navController.navigate("series")
@@ -207,6 +253,7 @@ fun ContenidoSerieEliminar(navController: NavHostController, servicio: SerieApiS
         borrar = false
     }
 }
+
 
 // ✅ Helper seguro para mostrar Toasts fuera del contexto composable
 fun showToast(context: android.content.Context, message: String) {
