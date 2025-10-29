@@ -1,14 +1,16 @@
 package com.example.lab10_maxi.view
 
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
@@ -131,40 +133,42 @@ fun ContenidoSerieEditar(navController: NavHostController, servicio: SerieApiSer
                     grabar = true
                 }
             },
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6200EE))
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1976D2))
         ) {
-            Text("Grabar", fontSize = 16.sp, color = Color.White)
+            Text("Guardar Cambios", fontSize = 16.sp, color = Color.White, fontWeight = FontWeight.Bold)
         }
     }
 
     if (grabar) {
         val safeRating = rating.toIntOrNull() ?: 0
         val objSerie = SerieModel(id, name, release_date, safeRating, category)
+        val contextRef = context.applicationContext
 
+        // ✅ Llamadas API + Toast desde helper function
         LaunchedEffect(objSerie) {
             try {
                 if (id == 0) {
                     servicio.insertSerie(objSerie)
-                    Log.i("SERIES_APP", "Serie agregada: ${objSerie.name}")
+                    showToast(contextRef, "Serie registrada correctamente")
                 } else {
                     servicio.updateSerie(id.toString(), objSerie)
-                    Log.i("SERIES_APP", "Serie actualizada: ${objSerie.name}")
+                    showToast(contextRef, "Serie actualizada correctamente")
                 }
-                // limpiar campos después de guardar
-                name = ""
-                release_date = ""
-                rating = ""
-                category = ""
+                navController.navigate("series")
             } catch (e: Exception) {
+                showToast(contextRef, "Error al guardar: ${e.message}")
                 Log.e("SERIES_APP", "Error guardando: ${e.message}")
             }
-            navController.navigate("series")
         }
+
         grabar = false
     }
 }
 
-// 🔹 ELIMINAR SERIE (corregido y fuera del anterior)
+// 🔹 ELIMINAR SERIE
 @Composable
 fun ContenidoSerieEliminar(navController: NavHostController, servicio: SerieApiService, id: Int) {
     var showDialog by remember { mutableStateOf(true) }
@@ -174,7 +178,7 @@ fun ContenidoSerieEliminar(navController: NavHostController, servicio: SerieApiS
         AlertDialog(
             onDismissRequest = { showDialog = false },
             title = { Text("Confirmar Eliminación") },
-            text = { Text("¿Está seguro de eliminar la Serie?") },
+            text = { Text("¿Está seguro de eliminar la Serie con ID $id?") },
             confirmButton = {
                 Button(onClick = { showDialog = false; borrar = true }) {
                     Text("Aceptar")
@@ -189,15 +193,24 @@ fun ContenidoSerieEliminar(navController: NavHostController, servicio: SerieApiS
     }
 
     if (borrar) {
+        val contextRef = LocalContext.current.applicationContext
         LaunchedEffect(Unit) {
             try {
                 servicio.deleteSerie(id.toString())
-                Log.i("SERIES_APP", "Serie eliminada ID: $id")
+                showToast(contextRef, "Serie eliminada con éxito")
             } catch (e: Exception) {
+                showToast(contextRef, "Error al eliminar: ${e.message}")
                 Log.e("SERIES_APP", "Error al eliminar: ${e.message}")
             }
             navController.navigate("series")
         }
         borrar = false
+    }
+}
+
+// ✅ Helper seguro para mostrar Toasts fuera del contexto composable
+fun showToast(context: android.content.Context, message: String) {
+    Handler(Looper.getMainLooper()).post {
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 }
