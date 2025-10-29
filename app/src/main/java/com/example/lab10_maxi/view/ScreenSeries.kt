@@ -100,24 +100,23 @@ fun ContenidoSeriesListado(navController: NavHostController, servicio: SerieApiS
     }
 }
 
-// El resto (editar/eliminar) igual que antes (se mantienen validación y try/catch)
 @Composable
 fun ContenidoSerieEditar(navController: NavHostController, servicio: SerieApiService, pid: Int = 0) {
     val context = LocalContext.current
     var id = pid
-    var name: String? = ""
-    var release_date: String? = ""
-    var rating: String? = ""
-    var category: String? = ""
-    var grabar = false
+    var name by remember { mutableStateOf<String?>("") }
+    var release_date by remember { mutableStateOf<String?>("") }
+    var rating by remember { mutableStateOf<String?>("") }
+    var category by remember { mutableStateOf<String?>("") }
+    var grabar by remember { mutableStateOf(false) }
 
     if (id != 0) {
-        LaunchedEffect(Unit) {
+        LaunchedEffect(id) {
             val objSerie = servicio.selectSerie(id.toString())
-            name = objSerie.body()?.name
-            release_date = objSerie.body()?.release_date
-            rating = objSerie.body()?.rating.toString()
-            category = objSerie.body()?.category
+            name = objSerie.body()?.name ?: ""
+            release_date = objSerie.body()?.release_date ?: ""
+            rating = objSerie.body()?.rating?.toString() ?: "0"
+            category = objSerie.body()?.category ?: ""
         }
     }
 
@@ -137,14 +136,25 @@ fun ContenidoSerieEditar(navController: NavHostController, servicio: SerieApiSer
     }
 
     if (grabar) {
-        val objSerie = SerieModel(id, name ?: "", release_date ?: "", (rating ?: "0").toInt(), category ?: "")
-        LaunchedEffect(Unit) {
-            if (id == 0)
-                servicio.insertSerie(objSerie)
-            else
-                servicio.updateSerie(id.toString(), objSerie)
+        val safeRating = try { (rating ?: "0").toInt() } catch (e: Exception) { 0 }
+        val objSerie = SerieModel(id, name ?: "", release_date ?: "", safeRating, category ?: "")
+        LaunchedEffect(objSerie) {
+            try {
+                if (id == 0)
+                    servicio.insertSerie(objSerie)
+                else
+                    servicio.updateSerie(id.toString(), objSerie)
+                // limpiar campos después de guardar
+                name = ""
+                release_date = ""
+                rating = ""
+                category = ""
+            } catch (e: Exception) {
+                Log.e("SERIES_APP", "Error guardando: ${e.message}")
+            }
+            navController.navigate("series")
         }
-        navController.navigate("series")
+        grabar = false
     }
 }
 
@@ -174,10 +184,12 @@ fun ContenidoSerieEliminar(navController: NavHostController, servicio: SerieApiS
         LaunchedEffect(Unit) {
             try {
                 servicio.deleteSerie(id.toString())
+                Log.i("SERIES_APP", "Serie eliminada ID: $id")
             } catch (e: Exception) {
                 Log.e("SERIES_APP", "Error al eliminar: ${e.message}")
             }
             navController.navigate("series")
         }
+        borrar = false
     }
 }
