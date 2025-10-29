@@ -1,6 +1,7 @@
 package com.example.lab10_maxi.view
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -83,9 +85,9 @@ fun ContenidoSeriesListado(navController: NavHostController, servicio: SerieApiS
     }
 }
 
-// Las demás funciones (editar, eliminar) por ahora las dejamos igual a tu versión original
 @Composable
 fun ContenidoSerieEditar(navController: NavHostController, servicio: SerieApiService, pid: Int = 0) {
+    val context = LocalContext.current
     var id = pid
     var name: String? = ""
     var release_date: String? = ""
@@ -109,7 +111,13 @@ fun ContenidoSerieEditar(navController: NavHostController, servicio: SerieApiSer
         TextField(value = release_date ?: "", onValueChange = { release_date = it }, label = { Text("Release Date:") })
         TextField(value = rating ?: "", onValueChange = { rating = it }, label = { Text("Rating:") })
         TextField(value = category ?: "", onValueChange = { category = it }, label = { Text("Category:") })
-        Button(onClick = { grabar = true }) { Text("Grabar", fontSize = 16.sp) }
+        Button(onClick = {
+            if ((name ?: "").isBlank() || (release_date ?: "").isBlank() || (rating ?: "").isBlank() || (category ?: "").isBlank()) {
+                Toast.makeText(context, "Complete todos los campos", Toast.LENGTH_SHORT).show()
+            } else {
+                grabar = true
+            }
+        }) { Text("Grabar", fontSize = 16.sp) }
     }
 
     if (grabar) {
