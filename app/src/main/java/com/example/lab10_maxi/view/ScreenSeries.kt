@@ -5,18 +5,22 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,6 +35,8 @@ import com.example.lab10_maxi.data.SerieModel
 @Composable
 fun ContenidoSeriesListado(navController: NavHostController, servicio: SerieApiService) {
     val listaSeries: SnapshotStateList<SerieModel> = remember { mutableStateListOf() }
+    var isLoading by remember { mutableStateOf(true) }
+
     LaunchedEffect(Unit) {
         try {
             val listado = servicio.selectSeries()
@@ -38,7 +44,16 @@ fun ContenidoSeriesListado(navController: NavHostController, servicio: SerieApiS
             listado.forEach { listaSeries.add(it) }
         } catch (e: Exception) {
             Log.e("SERIES_APP", "Error al obtener series: ${e.message}")
+        } finally {
+            isLoading = false
         }
+    }
+
+    if (isLoading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
     }
 
     LazyColumn {
@@ -85,6 +100,7 @@ fun ContenidoSeriesListado(navController: NavHostController, servicio: SerieApiS
     }
 }
 
+// El resto (editar/eliminar) igual que antes (se mantienen validación y try/catch)
 @Composable
 fun ContenidoSerieEditar(navController: NavHostController, servicio: SerieApiService, pid: Int = 0) {
     val context = LocalContext.current
