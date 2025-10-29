@@ -5,25 +5,15 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
+import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -32,6 +22,7 @@ import androidx.navigation.NavHostController
 import com.example.lab10_maxi.data.SerieApiService
 import com.example.lab10_maxi.data.SerieModel
 
+// 🔹 LISTADO DE SERIES
 @Composable
 fun ContenidoSeriesListado(navController: NavHostController, servicio: SerieApiService) {
     val listaSeries: SnapshotStateList<SerieModel> = remember { mutableStateListOf() }
@@ -41,7 +32,7 @@ fun ContenidoSeriesListado(navController: NavHostController, servicio: SerieApiS
         try {
             val listado = servicio.selectSeries()
             listaSeries.clear()
-            listado.forEach { listaSeries.add(it) }
+            listaSeries.addAll(listado)
         } catch (e: Exception) {
             Log.e("SERIES_APP", "Error al obtener series: ${e.message}")
         } finally {
@@ -64,7 +55,7 @@ fun ContenidoSeriesListado(navController: NavHostController, servicio: SerieApiS
             ) {
                 Text("ID", fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(0.1f))
                 Text("SERIE", fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(0.7f))
-                Text("Accion", fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(0.2f))
+                Text("Acción", fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(0.2f))
             }
         }
 
@@ -80,16 +71,16 @@ fun ContenidoSeriesListado(navController: NavHostController, servicio: SerieApiS
                 IconButton(
                     onClick = {
                         navController.navigate("serieVer/${item.id}")
-                        Log.e("SERIE-VER", "ID = ${item.id}")
+                        Log.i("SERIES_APP", "Ver serie ID: ${item.id}")
                     },
                     modifier = Modifier.weight(0.15f)
                 ) {
-                    Icon(imageVector = Icons.Outlined.Edit, contentDescription = "Ver")
+                    Icon(imageVector = Icons.Outlined.Edit, contentDescription = "Editar")
                 }
                 IconButton(
                     onClick = {
                         navController.navigate("serieDel/${item.id}")
-                        Log.e("SERIE-DEL", "ID = ${item.id}")
+                        Log.i("SERIES_APP", "Eliminar serie ID: ${item.id}")
                     },
                     modifier = Modifier.weight(0.15f)
                 ) {
@@ -100,50 +91,65 @@ fun ContenidoSeriesListado(navController: NavHostController, servicio: SerieApiS
     }
 }
 
+// 🔹 EDITAR O CREAR SERIE
 @Composable
 fun ContenidoSerieEditar(navController: NavHostController, servicio: SerieApiService, pid: Int = 0) {
     val context = LocalContext.current
     var id = pid
-    var name by remember { mutableStateOf<String?>("") }
-    var release_date by remember { mutableStateOf<String?>("") }
-    var rating by remember { mutableStateOf<String?>("") }
-    var category by remember { mutableStateOf<String?>("") }
+    var name by remember { mutableStateOf("") }
+    var release_date by remember { mutableStateOf("") }
+    var rating by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf("") }
     var grabar by remember { mutableStateOf(false) }
 
     if (id != 0) {
         LaunchedEffect(id) {
-            val objSerie = servicio.selectSerie(id.toString())
-            name = objSerie.body()?.name ?: ""
-            release_date = objSerie.body()?.release_date ?: ""
-            rating = objSerie.body()?.rating?.toString() ?: "0"
-            category = objSerie.body()?.category ?: ""
+            try {
+                val objSerie = servicio.selectSerie(id.toString())
+                name = objSerie.body()?.name ?: ""
+                release_date = objSerie.body()?.release_date ?: ""
+                rating = objSerie.body()?.rating?.toString() ?: "0"
+                category = objSerie.body()?.category ?: ""
+            } catch (e: Exception) {
+                Log.e("SERIES_APP", "Error al cargar serie: ${e.message}")
+            }
         }
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         TextField(value = id.toString(), onValueChange = {}, label = { Text("ID (solo lectura)") }, readOnly = true)
-        TextField(value = name ?: "", onValueChange = { name = it }, label = { Text("Name:") })
-        TextField(value = release_date ?: "", onValueChange = { release_date = it }, label = { Text("Release Date:") })
-        TextField(value = rating ?: "", onValueChange = { rating = it }, label = { Text("Rating:") })
-        TextField(value = category ?: "", onValueChange = { category = it }, label = { Text("Category:") })
-        Button(onClick = {
-            if ((name ?: "").isBlank() || (release_date ?: "").isBlank() || (rating ?: "").isBlank() || (category ?: "").isBlank()) {
-                Toast.makeText(context, "Complete todos los campos", Toast.LENGTH_SHORT).show()
-            } else {
-                grabar = true
-            }
-        }) { Text("Grabar", fontSize = 16.sp) }
+        TextField(value = name, onValueChange = { name = it }, label = { Text("Name:") })
+        TextField(value = release_date, onValueChange = { release_date = it }, label = { Text("Release Date:") })
+        TextField(value = rating, onValueChange = { rating = it }, label = { Text("Rating:") })
+        TextField(value = category, onValueChange = { category = it }, label = { Text("Category:") })
+
+        Button(
+            onClick = {
+                if (name.isBlank() || release_date.isBlank() || rating.isBlank() || category.isBlank()) {
+                    Toast.makeText(context, "Complete todos los campos", Toast.LENGTH_SHORT).show()
+                } else {
+                    grabar = true
+                }
+            },
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6200EE))
+        ) {
+            Text("Grabar", fontSize = 16.sp, color = Color.White)
+        }
     }
 
     if (grabar) {
-        val safeRating = try { (rating ?: "0").toInt() } catch (e: Exception) { 0 }
-        val objSerie = SerieModel(id, name ?: "", release_date ?: "", safeRating, category ?: "")
+        val safeRating = rating.toIntOrNull() ?: 0
+        val objSerie = SerieModel(id, name, release_date, safeRating, category)
+
         LaunchedEffect(objSerie) {
             try {
-                if (id == 0)
+                if (id == 0) {
                     servicio.insertSerie(objSerie)
-                else
+                    Log.i("SERIES_APP", "Serie agregada: ${objSerie.name}")
+                } else {
                     servicio.updateSerie(id.toString(), objSerie)
+                    Log.i("SERIES_APP", "Serie actualizada: ${objSerie.name}")
+                }
                 // limpiar campos después de guardar
                 name = ""
                 release_date = ""
@@ -158,13 +164,14 @@ fun ContenidoSerieEditar(navController: NavHostController, servicio: SerieApiSer
     }
 }
 
+// 🔹 ELIMINAR SERIE (corregido y fuera del anterior)
 @Composable
 fun ContenidoSerieEliminar(navController: NavHostController, servicio: SerieApiService, id: Int) {
-    var showDialog = true
-    var borrar = false
+    var showDialog by remember { mutableStateOf(true) }
+    var borrar by remember { mutableStateOf(false) }
 
     if (showDialog) {
-        androidx.compose.material3.AlertDialog(
+        AlertDialog(
             onDismissRequest = { showDialog = false },
             title = { Text("Confirmar Eliminación") },
             text = { Text("¿Está seguro de eliminar la Serie?") },
@@ -180,6 +187,7 @@ fun ContenidoSerieEliminar(navController: NavHostController, servicio: SerieApiS
             }
         )
     }
+
     if (borrar) {
         LaunchedEffect(Unit) {
             try {

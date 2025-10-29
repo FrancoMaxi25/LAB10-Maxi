@@ -23,6 +23,7 @@ import com.example.lab10_maxi.data.SerieApiService
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
+
 @Composable
 fun SeriesApp() {
     val urlBase = "http://10.0.2.2:8000/"
@@ -33,6 +34,7 @@ fun SeriesApp() {
         .build()
 
     val servicio = retrofit.create(SerieApiService::class.java)
+    // Nota: en commits futuros podemos inyectar SerieRepository(servicio)
     val navController = rememberNavController()
 
     Scaffold(
@@ -51,7 +53,7 @@ fun BotonFAB(navController: NavHostController) {
     val rutaActual = cbeState?.destination?.route
     if (rutaActual == "series") {
         FloatingActionButton(
-            containerColor = Color.Magenta,
+            containerColor = Color(0xFF6200EE),
             contentColor = Color.White,
             onClick = { navController.navigate("serieNuevo") }
         ) {
@@ -66,7 +68,7 @@ fun BarraSuperior() {
     CenterAlignedTopAppBar(
         title = { Text("SERIES APP", color = Color.White, fontWeight = FontWeight.Bold) },
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primary
+            containerColor = Color(0xFF6200EE)
         )
     )
 }
